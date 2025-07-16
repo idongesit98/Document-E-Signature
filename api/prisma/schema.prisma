@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Users {
+  id  Int @id @default(autoincrement())
+  firstname String
+  lastname String
+  email String @unique
+  password String 
+  role UserRole @default(USER)
+  envelopes Envelope[] @relation("UserEnvelopes")
+  signatures Signature[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("users")
+}
+
+model Envelope {
+  id Int @id @default(autoincrement())
+  title String
+  description String?
+  uploaderId Int
+  uploader Users @relation("UserEnvelopes",fields: [uploaderId],references: [id])
+  recipients Recipient[]
+  Document Document[]
+  status EnvelopeStatus @default(DRAFT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  AuditTrail AuditTrail[]
+  @@map("envelopes")
+}
+
+model Document {
+  id Int @id @default(autoincrement())
+  name String
+  fileUrl String
+  envelopeId Int
+  envelope Envelope @relation(fields: [envelopeId],references: [id])
+  signatures Signature[]
+  @@map("documents")
+}
+
+model Recipient {
+  id Int @id @default(autoincrement())
+  email String
+  role ReceipientRole
+  status SignatureStatus  @default(PENDING)
+  signedAt DateTime?
+  envelopeId Int
+  envelope Envelope @relation(fields: [envelopeId],references: [id])
+  createdAt DateTime @default(now())
+  @@map("recipients")
+}
+
+model AuditTrail {
+  id Int @id @default(autoincrement())
+  action String
+  timeStamp DateTime @default(now())
+  envelopeId Int
+  envelope Envelope @relation(fields: [envelopeId],references: [id])
+  @@map("audittrails")
+}
+
+model Signature {
+  id Int @id @default(autoincrement())
+  signerId Int
+  documentId Int
+  signer Users @relation(fields: [signerId],references: [id])
+  document Document @relation(fields: [documentId],references: [id])
+  signedAt DateTime?
+  signature  String?
+  status SignatureStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([signerId,documentId])
+  @@map("signatures")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum EnvelopeStatus {
+  DRAFT
+  SENT
+  COMPLETED
+  CANCELLED
+}
+
+enum SignatureStatus {
+  PENDING
+  SIGNED
+  DECLINED
+}
+
+enum ReceipientRole {
+  SIGNER 
+  VIEWER
+}
