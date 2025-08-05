@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const envelopeController_1 = require("../controllers/envelopeController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authenticate);
+router.post("/create", envelopeController_1.createUserEnvelope);
+router.get("/all", envelopeController_1.getAll);
+router.get("/:id", envelopeController_1.getSingleEnvelope);
+router.post("/:id/send", envelopeController_1.sendAnEnvelope);
+exports.default = router;

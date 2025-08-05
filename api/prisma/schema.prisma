@@ -15,7 +15,7 @@ datasource db {
 
 
 model Users {
-  id  Int @id @default(autoincrement())
+  id  String @id @default(uuid())
   firstname String
   lastname String
   email String @unique
@@ -26,16 +26,17 @@ model Users {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("users")
+  Document Document[]
 }
 
 model Envelope {
-  id Int @id @default(autoincrement())
-  title String
+  id String @id @default(uuid())
+  title String @unique
   description String?
-  uploaderId Int
+  uploaderId String
   uploader Users @relation("UserEnvelopes",fields: [uploaderId],references: [id])
   recipients Recipient[]
-  Document Document[]
+  documents Document[]
   status EnvelopeStatus @default(DRAFT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,40 +46,45 @@ model Envelope {
 }
 
 model Document {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   name String
-  fileUrl String
-  envelopeId Int
-  envelope Envelope @relation(fields: [envelopeId],references: [id])
+  size Int
+  publicId String
+  resourceType String
+  userId String
+  user Users @relation(fields: [userId],references: [id])
+  fileUrl String?
+  envelopeId String?
+  envelope Envelope? @relation(fields: [envelopeId],references: [id])
   signatures Signature[]
   @@map("documents")
 }
 
 model Recipient {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   email String
   role ReceipientRole
   status SignatureStatus  @default(PENDING)
   signedAt DateTime?
-  envelopeId Int
+  envelopeId String
   envelope Envelope @relation(fields: [envelopeId],references: [id])
   createdAt DateTime @default(now())
   @@map("recipients")
 }
 
 model AuditTrail {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   action String
   timeStamp DateTime @default(now())
-  envelopeId Int
+  envelopeId String
   envelope Envelope @relation(fields: [envelopeId],references: [id])
   @@map("audittrails")
 }
 
 model Signature {
-  id Int @id @default(autoincrement())
-  signerId Int
-  documentId Int
+  id String @id @default(uuid())
+  signerId String
+  documentId String
   signer Users @relation(fields: [signerId],references: [id])
   document Document @relation(fields: [documentId],references: [id])
   signedAt DateTime?
@@ -105,7 +111,7 @@ enum EnvelopeStatus {
 enum SignatureStatus {
   PENDING
   SIGNED
-  DECLINED
+  VIEWED
 }
 
 enum ReceipientRole {

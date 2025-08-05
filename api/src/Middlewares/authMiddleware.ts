@@ -1,8 +1,9 @@
 import { Request,Response,NextFunction } from "express";
 import jwt,{JwtPayload} from 'jsonwebtoken';
-import prisma from "../Utils/Config/database";
+import prisma from "../utils/config/database";
 
-export const authMiddleware = async (req:Request,res:Response,next:NextFunction) => {
+
+export const authenticate = async (req:Request,res:Response,next:NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];
     if(!token) {
         res.status(401).json(
@@ -15,18 +16,32 @@ export const authMiddleware = async (req:Request,res:Response,next:NextFunction)
        const decoded = jwt.verify(token,process.env.JWT_SECRET!) as JwtPayload;
 
        if (!decoded || typeof decoded === "string" || !decoded.id) {
-            return res.status(401).json({message:"Invalid token"})
+            res.status(401).json({message:"Invalid token"})
+            return;
        }
 
        const user = await prisma.users.findUnique({where:{id:decoded.id}})
        if (!user) {
-            return res.status(401).json({message:"User not found"});
+            res.status(401).json({message:"User not found"});
+            return;
        }
 
-       (req as any).user = user;
+       req.user = user;
        next();
     } catch (error) {
         res.status(401).json({message:"Invalid token."})
         return
     }
 };
+
+export const authorize = (roles:string[]) =>{
+     (req:Request,res:Response,next:NextFunction) =>{
+        const user = req.user as {role:string};
+
+        if (!roles.includes(user.role)) {
+            res.status(403).json({error:"Access Denied"});
+        }
+        next();
+    };
+    return;
+}
