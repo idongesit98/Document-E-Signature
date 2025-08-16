@@ -1,6 +1,5 @@
 import { ReceipientRole } from "@prisma/client";
 import prisma from "../../utils/config/database";
-import { date } from "joi";
 
 export const addRecipientEnvelope = async(envelopeId:string,email:string,role:ReceipientRole) =>{
     try {
@@ -14,13 +13,13 @@ export const addRecipientEnvelope = async(envelopeId:string,email:string,role:Re
         return{
             code:201,
             success:true,
-            message:"Recipient created successfully",
+            message:"Recipient added successfully",
             data:{
                 recipient:createRecipient
             }
         }
     } catch (error) {
-        const errorMessage = (error instanceof Error) ? error.message : "Error creating recipient"
+        const errorMessage = (error instanceof Error) ? error.message : "Error adding recipient"
         return{
             code:500,
             success:false,

@@ -44,9 +44,13 @@ const authenticate = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
 exports.authenticate = authenticate;
 const authorize = (roles) => {
     (req, res, next) => {
+        // const user = req.user as {role:string};
+        // if (!roles.includes(user.role)) {
+        //     res.status(403).json({error:"Access Denied"});
+        // }
         const user = req.user;
-        if (!roles.includes(user.role)) {
-            res.status(403).json({ error: "Access Denied" });
+        if (!user || !roles.includes(user.role)) {
+            res.status(403).json({ error: "Access denied" });
         }
         next();
     };

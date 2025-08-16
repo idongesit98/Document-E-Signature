@@ -13,10 +13,10 @@ exports.sendAnEnvelope = exports.getAll = exports.getSingleEnvelope = exports.cr
 const envelopeService_1 = require("../services/envelopeService/envelopeService");
 const createUserEnvelope = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { title, description } = req.body;
-        //const userId = req.user.id
-        //const createResponse = await createEnvelope(userId,title,description)
-        //res.status(createResponse.code).json(createResponse)
+        const { title, description, recipients, documents } = req.body;
+        const userId = req.user.id;
+        const createResponse = yield (0, envelopeService_1.createEnvelope)(userId, title, description, recipients, documents);
+        res.status(createResponse.code).json(createResponse);
     }
     catch (error) {
         res.status(400).send({ success: false, message: error.message });
@@ -24,9 +24,9 @@ const createUserEnvelope = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.createUserEnvelope = createUserEnvelope;
 const getSingleEnvelope = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.params.id;
+    const envelopeId = req.params.envelopeId;
     try {
-        const envelopes = yield (0, envelopeService_1.getEnvelopeById)(id);
+        const envelopes = yield (0, envelopeService_1.getEnvelopeById)(envelopeId);
         res.status(envelopes.code).json(envelopes);
     }
     catch (error) {
@@ -35,9 +35,9 @@ const getSingleEnvelope = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.getSingleEnvelope = getSingleEnvelope;
 const getAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.params.id;
     try {
-        const Allenvelopes = yield (0, envelopeService_1.allEnvelopes)(id);
+        const userId = req.user.id;
+        const Allenvelopes = yield (0, envelopeService_1.allEnvelopes)(userId);
         res.status(Allenvelopes.code).json(Allenvelopes);
     }
     catch (error) {
@@ -46,9 +46,9 @@ const getAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getAll = getAll;
 const sendAnEnvelope = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.params.id;
+    const envelopeId = req.params.envelopeId;
     try {
-        const SendEnvelope = yield (0, envelopeService_1.sendEnvelope)(id);
+        const SendEnvelope = yield (0, envelopeService_1.sendEnvelope)(envelopeId);
         res.status(SendEnvelope.code).json(SendEnvelope);
     }
     catch (error) {

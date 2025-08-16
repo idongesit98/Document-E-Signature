@@ -8,7 +8,7 @@ router.use(authenticate)
 
 router.post("/create",createUserEnvelope);
 router.get("/all",getAll);
-router.get("/:id",getSingleEnvelope);
-router.post("/:id/send",sendAnEnvelope)
+router.get("/:envelopeId/single",getSingleEnvelope);
+router.post("/:envelopeId/send",sendAnEnvelope)
 
 export default router;

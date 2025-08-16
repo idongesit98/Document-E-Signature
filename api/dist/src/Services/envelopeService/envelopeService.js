@@ -16,9 +16,43 @@ exports.sendEnvelope = exports.allEnvelopes = exports.getEnvelopeById = exports.
 const client_1 = require("@prisma/client");
 const database_1 = __importDefault(require("../../utils/config/database"));
 const envelopeHistory_1 = require("../history/envelopeHistory");
-const createEnvelope = (userId, title, description) => __awaiter(void 0, void 0, void 0, function* () {
+// export const createEnvelope = async(userId:string,title:string,description:string) =>{
+//     try {
+//         const existing = await prisma.envelope.findUnique({where:{title:title}})
+//         if (existing) {
+//             return{
+//                 code:400,
+//                 success:false,
+//                 message:"Envelope already exists",
+//                 data:null
+//             }
+//         }
+//         const newEnvelope = await prisma.envelope.create({
+//             data:{
+//                 title,
+//                 uploaderId:userId,
+//                 description
+//             }
+//         })
+//         await logAction({ envelopeId: userId, action: "Envelope sent" });
+//         return{
+//             code:201,
+//             success:true,
+//             message:"Envelope created successfully",
+//             data:{newEnvelope}
+//         }    
+//     } catch (error) {
+//        const errorMessage = (error instanceof Error) ? error.message : "Error creating envelope"
+//         return{
+//             code:500,
+//             success:false,
+//             message:errorMessage
+//         }
+//     }
+// }
+const createEnvelope = (userId, title, description, recipients, documents) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const existing = yield database_1.default.envelope.findUnique({ where: { title: title } });
+        const existing = yield database_1.default.envelope.findUnique({ where: { title } });
         if (existing) {
             return {
                 code: 400,
@@ -30,20 +64,33 @@ const createEnvelope = (userId, title, description) => __awaiter(void 0, void 0,
         const newEnvelope = yield database_1.default.envelope.create({
             data: {
                 title,
+                description,
                 uploaderId: userId,
-                description
-            }
+                status: "DRAFT",
+                recipients: { create: recipients },
+                documents: {
+                    create: documents.map(doc => ({
+                        name: doc.name,
+                        size: doc.size,
+                        publicId: doc.publicId,
+                        fileUrl: doc.fileUrl,
+                        resourceType: doc.resourceType,
+                        userId
+                    }))
+                }
+            },
+            include: { recipients: true, documents: true }
         });
-        yield (0, envelopeHistory_1.logAction)({ envelopeId: userId, action: "Envelope sent" });
+        yield (0, envelopeHistory_1.logAction)({ envelopeId: newEnvelope.id, action: "Envelope created" });
         return {
             code: 201,
             success: true,
             message: "Envelope created successfully",
-            data: { newEnvelope }
+            data: newEnvelope
         };
     }
     catch (error) {
-        const errorMessage = (error instanceof Error) ? error.message : "Error creating envelope";
+        const errorMessage = error instanceof Error ? error.message : "Error creating envelope";
         return {
             code: 500,
             success: false,
@@ -52,10 +99,10 @@ const createEnvelope = (userId, title, description) => __awaiter(void 0, void 0,
     }
 });
 exports.createEnvelope = createEnvelope;
-const getEnvelopeById = (userid) => __awaiter(void 0, void 0, void 0, function* () {
+const getEnvelopeById = (envelopeId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const getEnvelopeById = yield database_1.default.envelope.findUnique({
-            where: { id: userid },
+            where: { id: envelopeId },
             include: {
                 recipients: true,
                 uploader: true,
@@ -74,7 +121,7 @@ const getEnvelopeById = (userid) => __awaiter(void 0, void 0, void 0, function* 
             code: 200,
             success: true,
             message: "Envelope found",
-            data: { getEnvelopeById }
+            data: { Envelope: getEnvelopeById }
         };
     }
     catch (error) {
@@ -91,12 +138,13 @@ exports.getEnvelopeById = getEnvelopeById;
 const allEnvelopes = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const getAllEnvelopes = yield database_1.default.envelope.findMany({
-            where: { id: userId },
+            where: { uploaderId: userId },
             include: {
                 recipients: true,
                 uploader: true,
                 documents: true
-            }
+            },
+            orderBy: { createdAt: "desc" }
         });
         if (getAllEnvelopes.length === 0) {
             return {
@@ -110,7 +158,7 @@ const allEnvelopes = (userId) => __awaiter(void 0, void 0, void 0, function* () 
             code: 200,
             success: true,
             message: "Envelopes found",
-            data: { getAllEnvelopes }
+            data: { AllEnvelopes: getAllEnvelopes }
         };
     }
     catch (error) {
@@ -124,10 +172,10 @@ const allEnvelopes = (userId) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.allEnvelopes = allEnvelopes;
-const sendEnvelope = (userid) => __awaiter(void 0, void 0, void 0, function* () {
+const sendEnvelope = (envelopeId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const sending = yield database_1.default.envelope.update({
-            where: { id: userid },
+            where: { id: envelopeId },
             data: {
                 status: client_1.EnvelopeStatus.SENT
             }

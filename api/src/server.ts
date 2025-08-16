@@ -7,14 +7,16 @@ import docuRoutes from "./routes/docuRoutes"
 import recipientRoutes from "./routes/recipientRoute"
 import signRoutes from "./routes/signRoutes"
 import auditRoutes from "./routes/auditRoutes"
+import { connectRedis } from "./utils/config/redis";
 
 dotenv.config();
 
 const app = express()
-app.use(express.json());
-app.use(express.urlencoded({extended:false}))
-app.use(morgan('dev'))
+connectRedis();
 
+app.use(morgan('dev'))
+app.use(express.json());
+app.use(express.urlencoded({extended:true}))
 
 app.use("/api/auth",authRoutes)
 app.use("/api/envelopes",envelopeRoutes);

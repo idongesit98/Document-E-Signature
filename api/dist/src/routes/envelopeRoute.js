@@ -7,6 +7,6 @@ const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authenticate);
 router.post("/create", envelopeController_1.createUserEnvelope);
 router.get("/all", envelopeController_1.getAll);
-router.get("/:id", envelopeController_1.getSingleEnvelope);
-router.post("/:id/send", envelopeController_1.sendAnEnvelope);
+router.get("/:envelopeId/single", envelopeController_1.getSingleEnvelope);
+router.post("/:envelopeId/send", envelopeController_1.sendAnEnvelope);
 exports.default = router;

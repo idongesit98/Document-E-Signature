@@ -16,6 +16,8 @@ exports.signDocument = exports.viewDocument = void 0;
 const client_1 = require("@prisma/client");
 const database_1 = __importDefault(require("../../utils/config/database"));
 const envelopeHistory_1 = require("../../services/history/envelopeHistory");
+const pdfUtils_1 = require("../../utils/config/pdfUtils");
+const cloudinary_1 = __importDefault(require("../../utils/config/cloudinary"));
 const viewDocument = (envelopeId, recipientId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const recipient = yield database_1.default.recipient.update({
@@ -41,36 +43,50 @@ const viewDocument = (envelopeId, recipientId) => __awaiter(void 0, void 0, void
     }
 });
 exports.viewDocument = viewDocument;
-const signDocument = (envelopeId, recipientId) => __awaiter(void 0, void 0, void 0, function* () {
+const signDocument = (documentId, signerId, signatureText, signatureType) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const recipient = yield database_1.default.recipient.update({
-            where: { id: recipientId },
-            data: {
-                status: client_1.SignatureStatus.SIGNED,
-                signedAt: new Date(),
-            }
+        const document = yield database_1.default.document.findUnique({ where: { id: documentId }, include: { envelope: true } });
+        if (!document) {
+            return {
+                code: 404,
+                success: false,
+                message: "Document not found"
+            };
+        }
+        let signatureUrl = signatureText;
+        //Upload to cloudinary if it drawn (base64) signature
+        if (signatureType === "DRAWN" && !signatureText.startsWith("http")) {
+            const uploadRes = yield cloudinary_1.default.uploader.upload(signatureText, { folder: "signatures" });
+            signatureUrl = uploadRes.secure_url;
+        }
+        //create or update signature record
+        yield database_1.default.signature.upsert({
+            where: { signerId_documentId: { signerId, documentId } },
+            update: { signature: signatureUrl, signedAt: new Date(), status: "SIGNED" },
+            create: { signerId, documentId, signature: signatureUrl, signedAt: new Date() }
         });
-        //check if all recipients have signed, then updates envelope status
-        const all = yield database_1.default.recipient.findMany({
-            where: { envelopeId },
+        const signedPdfUrl = yield (0, pdfUtils_1.embedSignatureToPdf)(document.publicId, signatureType, signatureType === "TYPED" ? signatureText : "", signatureType === "DRAWN" ? signatureUrl : undefined);
+        //check if all recipients signed and complete envelope
+        const unsignedCount = yield database_1.default.recipient.count({
+            where: { envelopeId: document.envelopeId, status: "PENDING" }
         });
-        yield (0, envelopeHistory_1.logAction)({ envelopeId, action: `Recipient ${recipientId} signed document` });
-        const allSigned = all.every((r) => r.status === client_1.SignatureStatus.SIGNED);
-        if (allSigned) {
+        if (unsignedCount === 0) {
             yield database_1.default.envelope.update({
-                where: { id: envelopeId },
-                data: { status: client_1.EnvelopeStatus.COMPLETED },
+                where: { id: document.envelopeId },
+                data: { status: "COMPLETED" }
             });
         }
         return {
             code: 200,
             success: true,
-            message: "Signed successfully",
-            data: { recipient }
+            message: "Document signed successfully",
+            data: {
+                Signed: signedPdfUrl
+            }
         };
     }
     catch (error) {
-        const errorMessage = (error instanceof Error) ? error.message : "Couldnt sign document";
+        const errorMessage = error instanceof Error ? error.message : "Error signing document";
         return {
             code: 500,
             success: false,

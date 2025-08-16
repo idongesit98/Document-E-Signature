@@ -16,7 +16,7 @@ const viewDoc = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const envelopeId = req.params.envelopeId;
         const recipientId = req.params.recipientId;
         const viewResponse = yield (0, signService_1.viewDocument)(envelopeId, recipientId);
-        res.json(viewResponse.code).json({ success: true, message: "Document viewed successfully" });
+        res.status(viewResponse.code).json({ success: true, message: "Document viewed successfully", data: viewResponse });
     }
     catch (error) {
         const errorMessage = (error instanceof Error) ? error.message : "Document viewed successfully";
@@ -26,10 +26,15 @@ const viewDoc = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.viewDoc = viewDoc;
 const signDoc = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const envelopeId = req.params.envelopeId;
-        const recipientId = req.params.recipientId;
-        const signResponse = yield (0, signService_1.signDocument)(envelopeId, recipientId);
-        res.json(signResponse.code).json({ success: true, message: "Document signed successfully" });
+        const { signatureType, signatureText } = req.body;
+        const signerId = req.user.id;
+        const { documentId } = req.params;
+        if (!signatureText || signatureText.trim() === "") {
+            res.status(400).json({ error: "Signature text is required" });
+            return;
+        }
+        const signResponse = yield (0, signService_1.signDocument)(signerId, documentId, signatureType, signatureText);
+        res.status(signResponse.code).json({ data: signResponse });
     }
     catch (error) {
         const errorMessage = (error instanceof Error) ? error.message : "Document viewed successfully";

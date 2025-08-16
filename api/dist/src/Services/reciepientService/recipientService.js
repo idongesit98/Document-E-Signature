@@ -26,14 +26,14 @@ const addRecipientEnvelope = (envelopeId, email, role) => __awaiter(void 0, void
         return {
             code: 201,
             success: true,
-            message: "Recipient created successfully",
+            message: "Recipient added successfully",
             data: {
                 recipient: createRecipient
             }
         };
     }
     catch (error) {
-        const errorMessage = (error instanceof Error) ? error.message : "Error creating recipient";
+        const errorMessage = (error instanceof Error) ? error.message : "Error adding recipient";
         return {
             code: 500,
             success: false,
